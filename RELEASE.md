@@ -3,6 +3,13 @@
 ## Major Features and Improvements
 
 ## Breaking changes
+*   Do not store pipeline information on the local machine when using
+    Kubeflow Pipelines orchestration. CLI will always uses the latest version
+    of the pipeline in the Kubeflow Pipeline cluster.
+    All operations will be executed based on the information on the
+    Kubeflow Pipeline cluster. There might be some left files on
+    `${HOME}/tfx/kubeflow` or `${HOME}/kubeflow` but those will not be used
+    any more.
 
 ### For pipeline authors
 
