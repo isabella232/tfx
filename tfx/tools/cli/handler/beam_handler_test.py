@@ -29,7 +29,6 @@ from tfx.dsl.components.base import base_driver
 from tfx.dsl.io import fileio
 from tfx.tools.cli import labels
 from tfx.tools.cli.handler import beam_handler
-from tfx.utils import test_case_utils
 
 
 def _MockSubprocess(cmd, env):  # pylint: disable=invalid-name, unused-argument
@@ -61,17 +60,22 @@ def _MockSubprocess3(cmd, env):  # pylint: disable=unused-argument
   return 0
 
 
-class BeamHandlerTest(test_case_utils.TempWorkingDirTestCase):
+class BeamHandlerTest(tf.test.TestCase):
 
   def setUp(self):
     super(BeamHandlerTest, self).setUp()
     self.chicago_taxi_pipeline_dir = os.path.join(
         os.path.dirname(os.path.dirname(os.path.abspath(__file__))), 'testdata')
-    self._home = self.tmp_dir
-    self.enter_context(test_case_utils.override_env_var('HOME', self._home))
-    self._beam_home = os.path.join(os.environ['HOME'], 'beam')
-    self.enter_context(
-        test_case_utils.override_env_var('BEAM_HOME', self._beam_home))
+    self._tmp_dir = os.environ.get('TEST_UNDECLARED_OUTPUTS_DIR',
+                                   self.get_temp_dir())
+    self._home = os.path.join(self._tmp_dir, self._testMethodName)
+    self._olddir = os.getcwd()
+    os.chdir(self._tmp_dir)
+    self._original_home_value = os.environ.get('HOME', '')
+    os.environ['HOME'] = self._home
+    self._original_beam_home_value = os.environ.get('BEAM_HOME', '')
+    os.environ['BEAM_HOME'] = os.path.join(os.environ['HOME'], 'beam')
+    self._beam_home = os.environ['BEAM_HOME']
 
     # Flags for handler.
     self.engine = 'beam'
@@ -87,6 +91,14 @@ class BeamHandlerTest(test_case_utils.TempWorkingDirTestCase):
         'pipeline_name': 'chicago_taxi_beam',
         'pipeline_dsl_path': self.pipeline_path
     }
+
+  def tearDown(self):
+    super(BeamHandlerTest, self).tearDown()
+    if self._home:
+      os.environ['HOME'] = self._original_home_value
+    if self._beam_home:
+      os.environ['BEAM_HOME'] = self._original_beam_home_value
+    os.chdir(self._olddir)
 
   @mock.patch('subprocess.call', _MockSubprocess)
   def testSavePipeline(self):
@@ -324,7 +336,7 @@ class BeamHandlerTest(test_case_utils.TempWorkingDirTestCase):
       f.write('SCHEMA')
     with self.captureWritesToStream(sys.stdout) as captured:
       handler.get_schema()
-      curr_dir_path = os.path.abspath('schema.pbtxt')
+      curr_dir_path = os.path.join(os.getcwd(), 'schema.pbtxt')
       self.assertIn('Path to schema: {}'.format(curr_dir_path),
                     captured.contents())
       self.assertIn(

@@ -3,6 +3,7 @@
 ## Major Features and Improvements
 
 ## Breaking changes
+Deprecated input/output compatibility aliases for ExampleValidator.
 
 ### For pipeline authors
 

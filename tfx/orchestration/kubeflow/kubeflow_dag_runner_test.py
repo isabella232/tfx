@@ -19,7 +19,9 @@ from __future__ import division
 from __future__ import print_function
 
 import os
+import shutil
 import tarfile
+import tempfile
 from typing import Text
 
 from kfp import onprem
@@ -31,7 +33,6 @@ from tfx.orchestration import data_types
 from tfx.orchestration import pipeline as tfx_pipeline
 from tfx.orchestration.kubeflow import kubeflow_dag_runner
 from tfx.utils import telemetry_utils
-from tfx.utils import test_case_utils
 import yaml
 
 from ml_metadata.proto import metadata_store_pb2
@@ -53,12 +54,21 @@ def _two_step_pipeline() -> tfx_pipeline.Pipeline:
   )
 
 
-class KubeflowDagRunnerTest(test_case_utils.TempWorkingDirTestCase):
+class KubeflowDagRunnerTest(tf.test.TestCase):
+
+  def setUp(self):
+    super(KubeflowDagRunnerTest, self).setUp()
+    self.test_dir = tempfile.mkdtemp()
+    os.chdir(self.test_dir)
+
+  def tearDown(self):
+    super(KubeflowDagRunnerTest, self).tearDown()
+    shutil.rmtree(self.test_dir)
 
   def testTwoStepPipeline(self):
     """Sanity-checks the construction and dependencies for a 2-step pipeline."""
     kubeflow_dag_runner.KubeflowDagRunner().run(_two_step_pipeline())
-    file_path = os.path.join(self.tmp_dir, 'two_step_pipeline.tar.gz')
+    file_path = os.path.join(self.test_dir, 'two_step_pipeline.tar.gz')
     self.assertTrue(fileio.exists(file_path))
 
     with tarfile.TarFile.open(file_path).extractfile(
@@ -126,7 +136,7 @@ class KubeflowDagRunnerTest(test_case_utils.TempWorkingDirTestCase):
 
   def testDefaultPipelineOperatorFuncs(self):
     kubeflow_dag_runner.KubeflowDagRunner().run(_two_step_pipeline())
-    file_path = 'two_step_pipeline.tar.gz'
+    file_path = os.path.join(self.test_dir, 'two_step_pipeline.tar.gz')
     self.assertTrue(fileio.exists(file_path))
 
     with tarfile.TarFile.open(file_path).extractfile(
@@ -145,7 +155,7 @@ class KubeflowDagRunnerTest(test_case_utils.TempWorkingDirTestCase):
             pipeline_operator_funcs=kubeflow_dag_runner
             .get_default_pipeline_operator_funcs(use_gcp_sa=True))).run(
                 _two_step_pipeline())
-    file_path = 'two_step_pipeline.tar.gz'
+    file_path = os.path.join(self.test_dir, 'two_step_pipeline.tar.gz')
     self.assertTrue(fileio.exists(file_path))
 
     with tarfile.TarFile.open(file_path).extractfile(
@@ -187,7 +197,7 @@ class KubeflowDagRunnerTest(test_case_utils.TempWorkingDirTestCase):
 
     kubeflow_dag_runner.KubeflowDagRunner(config=config).run(
         _two_step_pipeline())
-    file_path = 'two_step_pipeline.tar.gz'
+    file_path = os.path.join(self.test_dir, 'two_step_pipeline.tar.gz')
     self.assertTrue(fileio.exists(file_path))
 
     with tarfile.TarFile.open(file_path).extractfile(

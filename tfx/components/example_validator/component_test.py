@@ -24,6 +24,8 @@ from tfx.types import artifact_utils
 from tfx.types import channel_utils
 from tfx.types import standard_artifacts
 
+import tfx.types.standard_component_specs as component_specs
+
 
 class ExampleValidatorTest(tf.test.TestCase):
 
@@ -36,10 +38,12 @@ class ExampleValidatorTest(tf.test.TestCase):
         statistics=channel_utils.as_channel([statistics_artifact]),
         schema=channel_utils.as_channel([standard_artifacts.Schema()]),
         exclude_splits=exclude_splits)
-    self.assertEqual(standard_artifacts.ExampleAnomalies.TYPE_NAME,
-                     example_validator.outputs['anomalies'].type_name)
-    self.assertEqual(example_validator.spec.exec_properties['exclude_splits'],
-                     '["eval"]')
+    self.assertEqual(
+        standard_artifacts.ExampleAnomalies.TYPE_NAME,
+        example_validator.outputs[component_specs.ANOMALIES_KEY].type_name)
+    self.assertEqual(
+        example_validator.spec.exec_properties[
+            component_specs.EXECLUDE_APLITS_KEY], '["eval"]')
 
 
 if __name__ == '__main__':

@@ -24,6 +24,11 @@ from tfx import types
 from tfx.components.example_validator import executor
 from tfx.dsl.components.base import base_component
 from tfx.dsl.components.base import executor_spec
+from absl import logging
+from tfx import types
+from tfx.components.example_validator import executor
+from tfx.dsl.components.base import base_component
+from tfx.dsl.components.base import executor_spec
 from tfx.types import standard_artifacts
 from tfx.types.standard_component_specs import ExampleValidatorSpec
 from tfx.utils import json_utils
@@ -66,9 +71,8 @@ class ExampleValidator(base_component.BaseComponent):
                statistics: types.Channel = None,
                schema: types.Channel = None,
                exclude_splits: Optional[List[Text]] = None,
-               output: Optional[types.Channel] = None,
-               stats: Optional[types.Channel] = None,
-               instance_name: Optional[Text] = None):
+               instance_name: Optional[Text] = None,
+               anomalies: Optional[Text] = None):
     """Construct an ExampleValidator component.
 
     Args:
@@ -77,23 +81,15 @@ class ExampleValidator(base_component.BaseComponent):
       exclude_splits: Names of splits that the example validator should not
         validate. Default behavior (when exclude_splits is set to None)
         is excluding no splits.
-      output: Output channel of type `standard_artifacts.ExampleAnomalies`.
-      stats: Backwards compatibility alias for the 'statistics' argument.
       instance_name: Optional name assigned to this specific instance of
         ExampleValidator. Required only if multiple ExampleValidator components
         are declared in the same pipeline.  Either `stats` or `statistics` must
         be present in the arguments.
+      anomalies: Output channel of type `standard_artifacts.ExampleAnomalies`.
     """
-    if stats:
-      logging.warning(
-          'The "stats" argument to the StatisticsGen component has '
-          'been renamed to "statistics" and is deprecated. Please update your '
-          'usage as support for this argument will be removed soon.')
-      statistics = stats
     if exclude_splits is None:
       exclude_splits = []
       logging.info('Excluding no splits because exclude_splits is not set.')
-    anomalies = output
     if not anomalies:
       anomalies = types.Channel(type=standard_artifacts.ExampleAnomalies)
     spec = ExampleValidatorSpec(
